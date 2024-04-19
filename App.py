@@ -1,6 +1,7 @@
 from customtkinter import CTk, CTkButton, CTkLabel, CTkInputDialog
 from tkinter import filedialog
-from ScrollBarScreen import ProgressBarScreen
+from ProgressBarScreen import ProgressBarScreen
+import file_processing
 import MessageBox
 import os
 
@@ -24,7 +25,7 @@ class App(CTk):
                                        command=self.get_output_path)
         self.output_Button.pack()
 
-        self.output_Label = CTkLabel(self, text=self.input_path)
+        self.output_Label = CTkLabel(self, text=self.output_path)
         self.output_Label.pack()
 
         self.organize_Button = CTkButton(self, text='Organizar', command=self.prepare_organization)
@@ -39,32 +40,38 @@ class App(CTk):
         end_year = int(separated_years[1].strip())
         print(f'Start year: {start_year}')
         print(f'End year: {end_year}')
-        #TODO acabar a barra de progresso
-        progressBar = ProgressBarScreen()
+
         self.create_year_and_months_dirs(start_year, end_year)
         MessageBox.show_success(message='Pastas dos anos e meses criados com sucesso!')
-        # TODO criar uma função que pega a data de criação de um arquivo
+        self.organize()
 
-    def organize(self):  # TODO acabar essa função
-        pass
+    def organize(self):  # TODO adicionar as extensões certas
+        allowed_extensions = []
+        for file_path in file_processing.get_all_file_paths(self.input_path, allowed_extensions):
+            print(f'Arquivo {file_path} sendo processado')
+
+            date = file_processing.get_creation_date(file_path)
+            _, month, year = date.split('/')
+            print(file_path.split('\\')[-1])
+            new_path = os.path.join(self.output_path, str(year), str(month), file_path.split('\\')[-1])
+            print('Foi do caminho : ' + file_path)
+            print('Pro caminho: ' + new_path)
+            file_processing.rename_file(file_path, new_path)
+
+        file_processing.delete_empty_dirs(self.output_path)
 
     def create_year_and_months_dirs(self, start, end):
+        progressBar = ProgressBarScreen(title='Criando arquivos', size=(end - start) * 12)
         for year in range(start, end + 1):
             year_path = str(year)
-            self.create_dir(year_path)
+            file_processing.create_dir(self.output_path, year_path)
 
             # creates each month's dir inside the year dir
-            months = [_ for _ in range(1, 13)]
+            months = [str(i).zfill(2) for i in range(1, 13)]
             for month in months:
-                self.create_dir(os.path.join(year_path, str(month)))
-
-    def create_dir(self, path):
-        full_path = os.path.join(self.output_path, path)
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-            print(f"Directory '{full_path}' created successfully.")
-        else:
-            print(f"Directory '{full_path}' already exists.")
+                file_processing.create_dir(self.output_path, os.path.join(year_path, month))
+                progressBar.increase()
+        print('Pastas criadas com sucesso!\n\n\n\n\n')
 
     def get_input_path(self):
         self.input_path = filedialog.askdirectory()
@@ -76,4 +83,5 @@ class App(CTk):
         self.output_path = filedialog.askdirectory()
         text = 'Pasta final: ' + self.output_path
         self.output_Label.configure(text=text)
-        print(f'Input path: {self.output_path}')
+        print(f'Output path: {self.output_path}')
+
