@@ -45,11 +45,15 @@ class App(CTk):
         MessageBox.show_success(message='Pastas dos anos e meses criados com sucesso!')
         self.organize()
 
-    def organize(self):  # TODO adicionar as extensões certas
+    def organize(self):
+        # TODO adicionar as extensões certas
         allowed_extensions = []
-        for file_path in file_processing.get_all_file_paths(self.input_path, allowed_extensions):
+        file_paths = file_processing.get_all_file_paths(self.input_path, allowed_extensions)
+        progressBar = ProgressBarScreen(title='Criando os arquivos!', size=len(file_paths))
+        for file_path in file_paths:
             print(f'Arquivo {file_path} sendo processado')
-
+            # TODO ver se eu posso só criar as pastas pros arquivos separados por ano aqui,
+            #      acho que eu posso tentar criar o diretório aqui e depois renomear o arquivo.
             date = file_processing.get_creation_date(file_path)
             _, month, year = date.split('/')
             print(file_path.split('\\')[-1])
@@ -57,6 +61,7 @@ class App(CTk):
             print('Foi do caminho : ' + file_path)
             print('Pro caminho: ' + new_path)
             file_processing.rename_file(file_path, new_path)
+            progressBar.increase()
 
         file_processing.delete_empty_dirs(self.output_path)
 
